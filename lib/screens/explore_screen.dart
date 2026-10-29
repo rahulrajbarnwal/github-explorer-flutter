@@ -1,9 +1,7 @@
 import '../providers/github_repositories_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../models/github_repository.dart';
-import '../providers/github_repositories_provider.dart';
 import '../widgets/repository_list.dart';
 
 class ExploreScreen extends ConsumerStatefulWidget {
@@ -74,16 +72,27 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
             repositoryState.value.isNotEmpty;
     final notifier = ref.read(githubRepositoriesProvider.notifier);
     final isLoadingMore = ref.watch(isLoadingMoreProvider);
+    final paginationError = ref.watch(paginationErrorProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Explore GitHub'),
+        title: const Row(
+          children: [
+            Icon(Icons.code, size: 28),
+            SizedBox(width: 10),
+            Text(
+              'GitHub Explorer',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
         actions: [
           if (searchController.text.isNotEmpty || hasResults)
             IconButton(
-              tooltip: 'Clear search',
+              tooltip: 'Clear search and results',
               onPressed: _clearSearch,
               icon: const Icon(Icons.clear_all),
             ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Padding(
@@ -95,7 +104,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
               textInputAction: TextInputAction.search,
               onSubmitted: (_) => _search(),
               decoration: InputDecoration(
-                hintText: 'Search Flutter, Kotlin, Android...',
+                hintText: 'Search repositories...',
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: searchController.text.isNotEmpty
                     ? IconButton(
@@ -107,15 +116,51 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                   },
                 )
                     : null,
-                border: const OutlineInputBorder(),
+                filled: true,
+                fillColor: Theme.of(context).colorScheme.surface,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 1.5,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
+              height: 48,
+              child: FilledButton.icon(
                 onPressed: repositoryState.isLoading ? null : _search,
-                child: const Text('Search repositories'),
+                icon: const Icon(Icons.search),
+                label: const Text(
+                  'Search repositories',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: FilledButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -124,24 +169,97 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                 loading: () => const Center(
                   child: CircularProgressIndicator(),
                 ),
-                error: (error, stackTrace) => Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text('Unable to load repositories.'),
-                      const SizedBox(height: 8),
-                      ElevatedButton(
-                        onPressed: _search,
-                        child: const Text('Retry'),
+                error: (error, stackTrace) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.cloud_off,
+                            size: 48,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Unable to load repositories',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            error.toString(),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 16),
+                          FilledButton.icon(
+                            onPressed: () {
+                              final query = searchController.text.trim();
+                              if (query.isNotEmpty) {
+                                ref
+                                    .read(githubRepositoriesProvider.notifier)
+                                    .search(query);
+                              }
+                            },
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Retry'),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
                 data: (repositories) {
                   if (repositories.isEmpty) {
-                    return const Center(
-                      child: Text(
-                        'Search for repositories to get started.',
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.travel_explore,
+                              size: 64,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(height: 20),
+                            Text(
+                              'Discover repositories',
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Search GitHub to explore projects, discover new ideas, '
+                                  'and find repositories built by developers worldwide.',
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 20),
+                            Wrap(
+                              alignment: WrapAlignment.center,
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: ['Flutter', 'Kotlin', 'Android'].map((topic) {
+                                return ActionChip(
+                                  label: Text(topic),
+                                  onPressed: () {
+                                    searchController.text = topic;
+                                    _search();
+                                  },
+                                );
+                              }).toList(),
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   }
@@ -166,6 +284,32 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                         const Padding(
                           padding: EdgeInsets.all(16),
                           child: Text('No more repositories'),
+                        ),
+                      if (paginationError != null)
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            children: [
+                              Text(
+                                paginationError!,
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 8),
+                              OutlinedButton.icon(
+                                onPressed: () {
+                                  ref
+                                      .read(paginationErrorProvider.notifier)
+                                      .state = null;
+
+                                  ref
+                                      .read(githubRepositoriesProvider.notifier)
+                                      .loadMore();
+                                },
+                                icon: const Icon(Icons.refresh),
+                                label: const Text('Retry loading more'),
+                              ),
+                            ],
+                          ),
                         ),
                       if (notifier.isLoadingMore)
                         const Padding(

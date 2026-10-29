@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import '../models/github_repository.dart';
@@ -9,6 +10,7 @@ final githubRepositoryApiProvider = Provider<GitHubRepositoryApi>((ref) {
   return api;
 });
 
+final paginationErrorProvider = StateProvider<String?>((ref) => null);
 final isLoadingMoreProvider = StateProvider<bool>((ref) => false);
 
 final githubRepositoriesProvider =
@@ -60,6 +62,7 @@ class GitHubRepositoriesNotifier
   }
 
   Future<void> loadMore() async {
+    ref.read(paginationErrorProvider.notifier).state = null;
     if (_isLoadingMore || !_hasMore || _query.isEmpty) return;
 
     final currentState = state;
@@ -87,8 +90,9 @@ class GitHubRepositoriesNotifier
       _currentPage = nextPage;
       _hasMore = results.length == 20;
     } catch (error) {
-      // Keep already loaded repositories visible.
-      rethrow;
+      ref.read(paginationErrorProvider.notifier).state =
+      'Could not load more repositories. Please retry.';
+      debugPrint('Failed to load more repositories: $error');
     } finally {
       _isLoadingMore = false;
       ref.read(isLoadingMoreProvider.notifier).state = false;

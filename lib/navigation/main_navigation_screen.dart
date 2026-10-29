@@ -1,4 +1,6 @@
+
 import 'package:flutter/material.dart';
+
 import '../screens/explore_screen.dart';
 import '../screens/favorites_screen.dart';
 
@@ -10,8 +12,7 @@ class MainNavigationScreen extends StatefulWidget {
       _MainNavigationScreenState();
 }
 
-class _MainNavigationScreenState
-    extends State<MainNavigationScreen> {
+class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int selectedIndex = 0;
 
   static const List<Widget> screens = [
@@ -21,6 +22,8 @@ class _MainNavigationScreenState
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       body: IndexedStack(
         index: selectedIndex,
@@ -33,9 +36,13 @@ class _MainNavigationScreenState
             selectedIndex = index;
           });
         },
+        backgroundColor: colorScheme.surface,
+        indicatorColor: colorScheme.primaryContainer,
+        elevation: 0,
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.search),
+            icon: Icon(Icons.explore_outlined),
+            selectedIcon: Icon(Icons.explore),
             label: 'Explore',
           ),
           NavigationDestination(
